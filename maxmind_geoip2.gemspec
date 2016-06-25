@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name         = 'maxmind_geoip2'
-  s.version      = "0.0.8"
+  s.version      = "0.0.8-keepopen"
 
   s.licenses     = ['WTFPL']
 

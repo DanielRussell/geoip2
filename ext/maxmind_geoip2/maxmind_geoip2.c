@@ -12,6 +12,7 @@
 
 VALUE mMaxmindGeoIP2 = Qnil;
 
+static MMDB_s mmdb;
 
 const char **lookup_path_parse(char *lookup_path, char *lang)
 {
@@ -91,9 +92,13 @@ VALUE mMaxmindGeoIP2_locate(int argc, VALUE *argv, VALUE self)
     Check_Type(file, T_STRING);
     filename = StringValuePtr(file);
 
-
-    MMDB_s mmdb;
-    int status = MMDB_open(filename, MMDB_MODE_MMAP, &mmdb);
+    int status;
+    if (mmdb.filename)
+    {
+        status = MMDB_SUCCESS;
+    } else {
+        status = MMDB_open(filename, MMDB_MODE_MMAP, &mmdb);
+    }
     if (MMDB_SUCCESS == status)
     {
         int gai_error, mmdb_error;
@@ -119,7 +124,6 @@ VALUE mMaxmindGeoIP2_locate(int argc, VALUE *argv, VALUE self)
             rb_hash_aset(locate_result, rb_str_new2("longitude"), locate_by_path(&result, "location longitude", NULL));
             rb_hash_aset(locate_result, rb_str_new2("time_zone"), locate_by_path(&result, "location time_zone", NULL));
         }
-        MMDB_close(&mmdb);
     } else {
         rb_raise(rb_eIOError, "unable to open file %s", filename);
     }
@@ -128,7 +132,17 @@ VALUE mMaxmindGeoIP2_locate(int argc, VALUE *argv, VALUE self)
 
 VALUE mMaxmindGeoIP2_file(VALUE self, VALUE filepath)
 {
+    char *filename;
+    VALUE file = rb_iv_get(self, "@_file");
     rb_iv_set(self, "@_file", filepath);
+
+    file = rb_iv_get(self, "@_file");
+    Check_Type(file, T_STRING);
+    filename = StringValuePtr(file);
+
+    if (mmdb.filename && strcmp(mmdb.filename, filename)) {
+        MMDB_close(&mmdb);
+    }
     return Qtrue;
 }
 
